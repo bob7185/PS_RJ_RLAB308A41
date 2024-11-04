@@ -1,4 +1,5 @@
 
+import { event } from "jquery";
 import * as Carousel from "./Carousel.js";
 import axios from "axios";
 
@@ -15,15 +16,16 @@ const getFavouritesBtn = document.getElementById("getFavouritesBtn");
 const API_KEY =
     "live_bMH43Q9myZW23NhUScd4Z5vCyo4HCW6JZdF2Wn14PdwY0ijI72ygtGDnYv9q3vFl";
 
+// setting default for axios
+axios.defaults.baseURL = 'https://api.thecatapi.com/v1'
 axios.defaults.headers.common['x-api-key'] = API_KEY;
 
 
 (async function initialLoad() {
-    let URL = `https://api.thecatapi.com/v1/breeds`;
+    let URL = `/breeds`;
     try {
-        let response = await axios.get(URL);
+        let response = await axios.get(URL, { onDownloadProgress: updateProgess });
         let breeds = response.data;
-        console.log(breeds);
         breeds.forEach((breed) => {
             let breedoption = document.createElement("option");
             breedoption.setAttribute("value", breed.id);
@@ -38,64 +40,60 @@ axios.defaults.headers.common['x-api-key'] = API_KEY;
 
 async function handleSelection() {
     let selectedBreed = this.value;
-    console.log("Selected Breed:", selectedBreed);
-    let url = `https://api.thecatapi.com/v1/images/search?limit=30&breed_ids=${selectedBreed}`;
-    let breedImagesResponse = await axios.get(url);
-    let breedImages = await breedImagesResponse.data
-    let breedInfo = structuredClone(breedImages[0]["breeds"][0]);
-    console.log(breedInfo);
-    //clear the carousel
+    let url = `/images/search?limit=30&breed_ids=${selectedBreed}`;
+    let breedImagesResponse = await axios.get(url, { onDownloadProgress: updateProgess });
+    let breedImages = breedImagesResponse.data
+    if (breedImages.length >= 1)    // the returned breed has data to display 
+    {
+        //show the info dump 
+        infoDump.style.display = 'block'
+        buildCarousel(breedImages);
+        let breedInfo = structuredClone(breedImages[0]["breeds"][0]);
+        populateBreedInfo(breedInfo);
+        return;
+    }
+    // has no data to display , clear the carousel 
     Carousel.clear();
-    breedImages.forEach((element) => {
-        console.log(element);
-        //used the createcarousel fucntion from carousel file to create a carousel element
-        let carouselElement = Carousel.createCarouselItem(
-            element.url,
-            "",
-            element.id
-        );
-        //append the element to the carousel
-        Carousel.appendCarousel(carouselElement);
-        //carouselContainer.appendChild(carouselElementDiv);
-    });
-    populateBreedInfo(breedInfo);
-    Carousel.start();
-}
+    //hide the info dump 
+    infoDump.style.display = 'none';
 
+}
 
 function populateBreedInfo(breedData) {
     document.getElementById("breed-name").textContent = breedData.name;
-    document.getElementById("breed-description").textContent =
-        breedData.description;
+    document.getElementById("breed-description").textContent = breedData.description;
     document.getElementById("breed-origin").textContent = breedData.origin;
     document.getElementById("breed-lifespan").textContent = breedData.life_span;
-    document.getElementById(
-        "breed-weight"
-    ).textContent = `${breedData.weight.imperial} lbs (${breedData.weight.metric} kg)`;
-    document.getElementById("breed-energy").textContent = breedData.energy_level;
-    document.getElementById("breed-affection").textContent =
-        breedData.affection_level;
-    document.getElementById("breed-grooming").textContent = breedData.grooming;
-    document.getElementById("breed-child-friendly").textContent =
-        breedData.child_friendly;
-    document.getElementById("breed-dog-friendly").textContent =
-        breedData.dog_friendly;
-    document.getElementById("breed-stranger-friendly").textContent =
-        breedData.stranger_friendly;
-    document.getElementById("breed-vocalization").textContent =
-        breedData.vocalisation;
-    document.getElementById("breed-temperament").textContent =
-        breedData.temperament;
-    document.getElementById("breed-health-issues").textContent =
-        breedData.health_issues;
-    document.getElementById("breed-hypoallergenic").textContent =
-        breedData.hypoallergenic ? "Yes" : "No";
-    document.getElementById("cfa-url").href = breedData.cfa_url;
-    document.getElementById("vca-url").href = breedData.vcahospitals_url;
-    document.getElementById("vetstreet-url").href = breedData.vetstreet_url;
-    document.getElementById("wikipedia-url").href = breedData.wikipedia_url;
-}
+    document.getElementById("breed-weight").textContent = `${breedData.weight.imperial} lbs (${breedData.weight.metric} kg)`;
+    document.getElementById("breed-energy").textContent = `${breedData.energy_level}/5`;
+    document.getElementById("breed-affection").textContent = `${breedData.affection_level}/5`;
+    document.getElementById("breed-grooming").textContent = `${breedData.grooming}/5`;
+    document.getElementById("breed-child-friendly").textContent = `${breedData.child_friendly}/5`;
+    document.getElementById("breed-dog-friendly").textContent = `${breedData.dog_friendly}/5`;
+    document.getElementById("breed-stranger-friendly").textContent = `${breedData.stranger_friendly}/5`;
+    document.getElementById("breed-vocalization").textContent = `${breedData.vocalisation}/5`;
+    document.getElementById("breed-temperament").textContent = breedData.temperament;
+    document.getElementById("breed-health-issues").textContent = `${breedData.health_issues}/5`;
+    document.getElementById("breed-hypoallergenic").textContent = breedData.hypoallergenic ? "Yes" : "No";
 
+    // Set links only if they exist
+    const links = [
+        { id: "cfa-url", url: breedData.cfa_url },
+        { id: "vca-url", url: breedData.vcahospitals_url },
+        { id: "vetstreet-url", url: breedData.vetstreet_url },
+        { id: "wikipedia-url", url: breedData.wikipedia_url },
+    ];
+
+    links.forEach(link => {
+        const anchor = document.getElementById(link.id);
+        if (link.url) {
+            anchor.href = link.url;
+            anchor.style.display = 'inline'; // Show the link
+        } else {
+            anchor.style.display = 'none'; // Hide the link if there's no URL
+        }
+    });
+}
 
 /**
  * 5. Add axios interceptors to log the time between request and response to the console.
@@ -105,19 +103,21 @@ function populateBreedInfo(breedData) {
  */
 
 let startTime = Date.now()
-axios.interceptors.request.use(() => {
+axios.interceptors.request.use((config) => {
     console.log(` Starting request to the server started`);
-})
-
-axios.interceptors.response.use(() => {
-    console.log(`Delay in getting a response; ${startTime - Date.now()} ms`);
-})
-
-
-
-
-
-
+    progressBar.style.width = '0%'
+    document.querySelector('body').style.cursor = 'progress';
+    return config
+}, function (error) {
+    return Promise.reject(error);
+  })
+axios.interceptors.response.use((response) => {
+    console.log(`Delay in getting a response; ${Date.now() - startTime} ms`);
+    document.querySelector('body').style.cursor = 'default';
+    return response
+}, function (error) {
+    return Promise.reject(error);
+  })
 
 /**
  * 6. Next, we'll create a progress bar to indicate the request is in progress.
@@ -134,12 +134,23 @@ axios.interceptors.response.use(() => {
  *   once or twice per request to this API. This is still a concept worth familiarizing yourself
  *   with for future projects.
  */
+function updateProgess(ProgressEvent) {
+    console.log(ProgressEvent);
+    let loaded = ProgressEvent.loaded;
+    let total = ProgressEvent.total;
+    let percentage = total ? Math.floor((loaded / total) * 100) : null;
+    console.log(`Download progress: ${percentage}`)
+    progressBar.style.width = percentage.toString() + '%'
+}
 
 /**
  * 7. As a final element of progress indication, add the following to your axios interceptors:
  * - In your request interceptor, set the body element's cursor style to "progress."
  * - In your response interceptor, remove the progress cursor style from the body element.
  */
+
+
+
 /**
  * 8. To practice posting data, we'll create a system to "favourite" certain images.
  * - The skeleton of this function has already been created for you.
@@ -153,7 +164,18 @@ axios.interceptors.response.use(() => {
  */
 export async function favourite(imgId) {
     // your code here
+    let url_fav = `/favourites?limit=1&image_id=${imgId}`;
+    let new_fav_id = await axios.get(url_fav);
+    if (new_fav_id.data.length === 1) {   //delete the favorite 
+        let resp = await axios.delete(`/favourites/${new_fav_id.data[0]['id']}`);
+        console.log('removed from favorite!')
+        return;
+    }
+    let response = await axios.post('/favourites', { image_id: imgId });
+    console.log('added to favorite!', response.data);
+    return;
 }
+
 
 /**
  * 9. Test your favourite() function by creating a getFavourites() function.
@@ -164,6 +186,45 @@ export async function favourite(imgId) {
  *    If that isn't in its own function, maybe it should be so you don't have to
  *    repeat yourself in this section.
  */
+async function getFavourites(event) {
+    event.preventDefault();
+    let favourites = await axios.get('/favourites');
+    let fav_data = favourites.data;
+    let fav_images = [];
+    // here we arsing the resulat array objct returned to create ana rray of objects with only the images data 
+    fav_data.forEach((element) => {
+
+        //copy the imag obj  if not empty and push it to fav
+        if (Object.keys(element).length > 1) {
+            let temp = structuredClone(element.image)
+            fav_images.push(temp)
+        }
+    })
+    // notice that somehwo that API always add 3 empty obje before the actual image data . so I am starting form index 3 
+    //console.log(fav_images.slice(3,))
+    infoDump.style.display = 'none';;
+    buildCarousel(fav_images.slice(3,));
+    return;
+}
+
+function buildCarousel(arrImg) {
+    //clear the carousel
+    Carousel.clear();
+    arrImg.forEach((element) => {
+        //used the createcarousel fucntion from carousel file to create a carousel element
+        let carouselElement = Carousel.createCarouselItem(
+            element.url,
+            "",
+            element.id
+        );
+        //append the element to the carousel
+        Carousel.appendCarousel(carouselElement);
+    });
+    Carousel.start();
+}
+
+getFavouritesBtn.addEventListener('click', getFavourites);
+
 
 /**
  * 10. Test your site, thoroughly!

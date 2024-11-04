@@ -82,35 +82,38 @@ async function handleSelection() {
 
 function populateBreedInfo(breedData) {
   document.getElementById("breed-name").textContent = breedData.name;
-  document.getElementById("breed-description").textContent =
-    breedData.description;
+  document.getElementById("breed-description").textContent = breedData.description;
   document.getElementById("breed-origin").textContent = breedData.origin;
   document.getElementById("breed-lifespan").textContent = breedData.life_span;
-  document.getElementById(
-    "breed-weight"
-  ).textContent = `${breedData.weight.imperial} lbs (${breedData.weight.metric} kg)`;
-  document.getElementById("breed-energy").textContent = breedData.energy_level;
-  document.getElementById("breed-affection").textContent =
-    breedData.affection_level;
-  document.getElementById("breed-grooming").textContent = breedData.grooming;
-  document.getElementById("breed-child-friendly").textContent =
-    breedData.child_friendly;
-  document.getElementById("breed-dog-friendly").textContent =
-    breedData.dog_friendly;
-  document.getElementById("breed-stranger-friendly").textContent =
-    breedData.stranger_friendly;
-  document.getElementById("breed-vocalization").textContent =
-    breedData.vocalisation;
-  document.getElementById("breed-temperament").textContent =
-    breedData.temperament;
-  document.getElementById("breed-health-issues").textContent =
-    breedData.health_issues;
-  document.getElementById("breed-hypoallergenic").textContent =
-    breedData.hypoallergenic ? "Yes" : "No";
-  document.getElementById("cfa-url").href = breedData.cfa_url;
-  document.getElementById("vca-url").href = breedData.vcahospitals_url;
-  document.getElementById("vetstreet-url").href = breedData.vetstreet_url;
-  document.getElementById("wikipedia-url").href = breedData.wikipedia_url;
+  document.getElementById("breed-weight").textContent = `${breedData.weight.imperial} lbs (${breedData.weight.metric} kg)`;
+  document.getElementById("breed-energy").textContent = `${breedData.energy_level}/5`;
+  document.getElementById("breed-affection").textContent = `${breedData.affection_level}/5`;
+  document.getElementById("breed-grooming").textContent = `${breedData.grooming}/5`;
+  document.getElementById("breed-child-friendly").textContent = `${breedData.child_friendly}/5`;
+  document.getElementById("breed-dog-friendly").textContent = `${breedData.dog_friendly}/5`;
+  document.getElementById("breed-stranger-friendly").textContent = `${breedData.stranger_friendly}/5`;
+  document.getElementById("breed-vocalization").textContent = `${breedData.vocalisation}/5`;
+  document.getElementById("breed-temperament").textContent = breedData.temperament;
+  document.getElementById("breed-health-issues").textContent = `${breedData.health_issues}/5`;
+  document.getElementById("breed-hypoallergenic").textContent = breedData.hypoallergenic ? "Yes" : "No";
+
+  // Set links only if they exist
+  const links = [
+      { id: "cfa-url", url: breedData.cfa_url },
+      { id: "vca-url", url: breedData.vcahospitals_url },
+      { id: "vetstreet-url", url: breedData.vetstreet_url },
+      { id: "wikipedia-url", url: breedData.wikipedia_url },
+  ];
+
+  links.forEach(link => {
+      const anchor = document.getElementById(link.id);
+      if (link.url) {
+          anchor.href = link.url;
+          anchor.style.display = 'inline'; // Show the link
+      } else {
+          anchor.style.display = 'none'; // Hide the link if there's no URL
+      }
+  });
 }
 
 /**

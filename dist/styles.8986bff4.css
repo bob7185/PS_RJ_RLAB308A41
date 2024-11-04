@@ -6,6 +6,9 @@ body {
 body {
   background-color: lightgray;
 }
+#breed-name{
+  text-align: center;
+}
 
 .progress-bar-top {
   position: fixed;
